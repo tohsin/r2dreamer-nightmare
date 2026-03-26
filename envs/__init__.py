@@ -60,6 +60,17 @@ def make_env(config, id):
             config.camera,
             config.seed + id,
         )
+    elif suite == "sgym":
+        import envs.sgym as sgym
+
+        env = sgym.SafetyGymnasium(
+            task,
+            config.action_repeat,
+            config.size,
+            config.get('camera', 'fixednear'),
+            seed=config.seed + id,
+        )
+        env = wrappers.NormalizeActions(env)
     else:
         raise NotImplementedError(suite)
     env = wrappers.TimeLimit(env, config.time_limit // config.action_repeat)

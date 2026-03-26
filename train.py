@@ -25,6 +25,16 @@ def main(config):
         tools.enable_deterministic_run()
     logdir = pathlib.Path(config.logdir).expanduser()
     logdir.mkdir(parents=True, exist_ok=True)
+    
+    if getattr(config, "wandb", False):
+        import wandb
+        from omegaconf import OmegaConf
+        wandb.init(
+            project=config.wandb_project,
+            name=logdir.name,
+            config=OmegaConf.to_container(config, resolve=True),
+            dir=str(logdir)
+        )
 
     # Mirror stdout/stderr to a file under logdir while keeping console output.
     console_f = tools.setup_console_log(logdir, filename="console.log")

@@ -163,6 +163,34 @@ class Logger:
         for name, value in self._histograms.items():
             self._writer.add_histogram(name, value, step)
 
+        try:
+            import wandb
+            if getattr(wandb, "run", None) is not None:
+                wandb_metrics = {}
+                for name, value in scalars:
+                    if "/" not in name:
+                        wandb_metrics["scalars/" + name] = value
+                    else:
+                        wandb_metrics[name] = value
+                        
+                for name, value in self._images.items():
+                    wandb_metrics[name] = wandb.Image(value)
+                    
+                for name, value in self._videos.items():
+                    name_str = name if isinstance(name, str) else name.decode("utf-8")
+                    if np.issubdtype(value.dtype, np.floating):
+                        vid_val = np.clip(255 * value, 0, 255).astype(np.uint8)
+                    else:
+                        vid_val = value
+                    B, T, H, W, C = vid_val.shape
+                    # Use batch 0 for wandb preview
+                    vid = vid_val[0].transpose(0, 3, 1, 2)  # T, C, H, W
+                    wandb_metrics[name_str] = wandb.Video(vid, fps=16, format="mp4")
+                    
+                wandb.log(wandb_metrics, step=step)
+        except ImportError:
+            pass
+
         self._writer.flush()
         self._scalars = {}
         self._images = {}
